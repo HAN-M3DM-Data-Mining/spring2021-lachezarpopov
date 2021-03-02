@@ -30,8 +30,8 @@ head(cleanDF)
 If we want to delete a row we can state it as the first argument, followed by a comma (without a second argument)
 
 ```{r}
-rowDeletion = rawDF[-1,]
-head(rowDeletion)
+#rowDeletion = rawDF[-1,]
+#head(rowDeletion)
 ```
 
 
