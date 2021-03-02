@@ -1,0 +1,111 @@
+---
+title: "R Notebook"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r}
+library(readr)
+library(tidyverse)
+library(class)
+library(caret)
+```
+
+# Data Understanding
+
+```{r}
+url = "https://raw.githubusercontent.com/businessdatasolutions/courses/main/data%20mining/gitbook/datasets/breastcancer.csv"
+rawDF = read_csv(url)
+head(rawDF, 10)
+```
+
+# Data Preparation
+
+```{r}
+cleanDF = rawDF[-1]
+head(cleanDF)
+```
+
+If we want to delete a row we can state it as the first argument, followed by a comma (without a second argument)
+
+```{r}
+rowDeletion = rawDF[-1,]
+head(rowDeletion)
+```
+
+
+We can check the counts of the data labels this way:
+
+```{r}
+cntDiag <- table(cleanDF$diagnosis)
+propDiag <- round(prop.table(cntDiag) * 100 , digits = 2)
+
+cntDiag
+propDiag
+```
+```{r}
+library(tidyverse)
+cleanDF$diagnosis <- factor(cleanDF$diagnosis, levels = c("B", "M"), labels = c("Benign", "Malignant")) %>% relevel("Malignant")
+head(cleanDF, 10)
+summary(cleanDF[c("radius_mean", "area_mean", "smoothness_mean")])
+```
+
+
+The following code normalizes the scales
+
+```{r}
+normalize <- function(x) { # Function takes in a vector
+  return ((x - min(x)) / (max(x) - min(x))) # distance of item value - minimum vector value divided by the range of all vector values
+}
+
+testSet1 <- c(1:5)
+testSet2 <- c(1:5) * 10
+
+cat("testSet1:", testSet1, "\n")
+
+cat("testSet2:", testSet2, "\n")
+
+cat("Normalized testSet1:", normalize(testSet1), "\n")
+```
+This is effectively a for loop that normalizes the entire dataset. It applies the function we created earlier normalize() to each column.
+```{r}
+nCols <- dim(cleanDF)[2]
+cleanDF_n <- sapply(2:nCols, 
+                    function(x) {
+  normalize(cleanDF[,x])
+}) %>% as.data.frame()
+
+summary(cleanDF_n[c("radius_mean", "area_mean", "smoothness_mean")])
+```
+We can now split our data into training and test sets.
+```{r}
+trainDF_feat <- cleanDF_n[1:469,  ]
+testDF_feat <- cleanDF_n[470:569,  ]
+```
+
+When creating the training and test sets, we’ve excluded the labels. We’ll create separate training and tests sets for them too.
+
+```{r}
+trainDF_labels <- cleanDF[1:469,  1]
+testDF_labels <- cleanDF[470:569,  1]
+```
+
+Now we can train and evaluate our kNN model.
+
+# Modeling & Evaluation
+
+```{r}
+library(class)
+cleanDF_test_pred <- knn(train = as.matrix(trainDF_feat), test = as.matrix(testDF_feat), cl = as.matrix(trainDF_labels), k = 21)
+head(cleanDF_test_pred)
+```
+
+This is a confusion matrix showing the actual positives, actual negatives, false positives and false negatives:
+```{r}
+library(caret)
+confusionMatrix(cleanDF_test_pred, testDF_labels[[1]], positive = NULL, dnn = c("Prediction", "True"))
+```
+This image explains the confusion matrix:
+
+<img src="https://businessdatasolutions.github.io/courses/data%20mining/gitbook/book-output/images/diffusion.png">
