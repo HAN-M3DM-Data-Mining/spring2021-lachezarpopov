@@ -194,7 +194,7 @@ summary {
 <h1 class="title toc-ignore">Assigment - kNN DIY</h1>
 <h4 class="author">Lachezar Popov - Author</h4>
 <h4 class="author">Sven van Bezooijen - Reviewer</h4>
-<h4 class="date">02 March, 2021</h4>
+<h4 class="date">03 March, 2021</h4>
 
 </div>
 
@@ -258,6 +258,7 @@ rawDF = read_csv(occupancy_url)</code></pre>
 {"columns":[{"label":["date"],"name":[1],"type":["dttm"],"align":["right"]},{"label":["Temperature"],"name":[2],"type":["dbl"],"align":["right"]},{"label":["Humidity"],"name":[3],"type":["dbl"],"align":["right"]},{"label":["Light"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["CO2"],"name":[5],"type":["dbl"],"align":["right"]},{"label":["HumidityRatio"],"name":[6],"type":["dbl"],"align":["right"]},{"label":["Occupancy"],"name":[7],"type":["dbl"],"align":["right"]}],"data":[{"1":"2015-02-04 17:51:00","2":"23.180","3":"27.2720","4":"426.0","5":"721.2500","6":"0.004792988","7":"1"},{"1":"2015-02-04 17:51:59","2":"23.150","3":"27.2675","4":"429.5","5":"714.0000","6":"0.004783441","7":"1"},{"1":"2015-02-04 17:53:00","2":"23.150","3":"27.2450","4":"426.0","5":"713.5000","6":"0.004779464","7":"1"},{"1":"2015-02-04 17:54:00","2":"23.150","3":"27.2000","4":"426.0","5":"708.2500","6":"0.004771509","7":"1"},{"1":"2015-02-04 17:55:00","2":"23.100","3":"27.2000","4":"426.0","5":"704.5000","6":"0.004756993","7":"1"},{"1":"2015-02-04 17:55:59","2":"23.100","3":"27.2000","4":"419.0","5":"701.0000","6":"0.004756993","7":"1"},{"1":"2015-02-04 17:57:00","2":"23.100","3":"27.2000","4":"419.0","5":"701.6667","6":"0.004756993","7":"1"},{"1":"2015-02-04 17:57:59","2":"23.100","3":"27.2000","4":"419.0","5":"699.0000","6":"0.004756993","7":"1"},{"1":"2015-02-04 17:58:59","2":"23.100","3":"27.2000","4":"419.0","5":"689.3333","6":"0.004756993","7":"1"},{"1":"2015-02-04 18:00:00","2":"23.075","3":"27.1750","4":"419.0","5":"688.0000","6":"0.004745351","7":"1"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
   </script>
 </div>
+<p><br></p>
 <p>Since the date column is the identifier for each observation and not an independent variable we will use in our model, we will remove it and store the output in a new variable called cleanDF in the code snippet below. We will also look at summary of the feature variables by specifying a subset of the data that excludes the target variable (the 6th column).</p>
 <pre class="r"><code>cleanDF = rawDF[-1]
 summary(cleanDF[-6])</code></pre>
@@ -275,6 +276,7 @@ summary(cleanDF[-6])</code></pre>
 ##  Mean   :0.003863  
 ##  3rd Qu.:0.004352  
 ##  Max.   :0.006476</code></pre>
+<p><br></p>
 <p>We can see that the ranges for the different feature variables are vastly different from one another so we would have to normalize them later in the data preparation section. We can also check the occurrences of the two values of our target variable in the following manner:</p>
 <pre class="r"><code>count_occupancy = table(cleanDF$Occupancy) # for the counts in absolute terms
 print(&#39;The observations of the labels where 0 is &lt;not occupied&gt; and 1 is &lt;occupied&gt; is:&#39; )</code></pre>
@@ -299,6 +301,7 @@ cat(&quot;\n&quot;,
     sep=&#39;&#39;)</code></pre>
 <pre><code>## 
 ## The proportion of observations where the room is occupied is 21.23%</code></pre>
+<p><br></p>
 <p>We can see that there are many more observations of unoccupied rooms (6414) vs observations of occupied rooms (1729)</p>
 </div>
 <div id="data-preparation" class="section level2">
@@ -311,10 +314,12 @@ head(cleanDF, 10)</code></pre>
 {"columns":[{"label":["Temperature"],"name":[1],"type":["dbl"],"align":["right"]},{"label":["Humidity"],"name":[2],"type":["dbl"],"align":["right"]},{"label":["Light"],"name":[3],"type":["dbl"],"align":["right"]},{"label":["CO2"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["HumidityRatio"],"name":[5],"type":["dbl"],"align":["right"]},{"label":["Occupancy"],"name":[6],"type":["fct"],"align":["left"]}],"data":[{"1":"23.180","2":"27.2720","3":"426.0","4":"721.2500","5":"0.004792988","6":"occupied"},{"1":"23.150","2":"27.2675","3":"429.5","4":"714.0000","5":"0.004783441","6":"occupied"},{"1":"23.150","2":"27.2450","3":"426.0","4":"713.5000","5":"0.004779464","6":"occupied"},{"1":"23.150","2":"27.2000","3":"426.0","4":"708.2500","5":"0.004771509","6":"occupied"},{"1":"23.100","2":"27.2000","3":"426.0","4":"704.5000","5":"0.004756993","6":"occupied"},{"1":"23.100","2":"27.2000","3":"419.0","4":"701.0000","5":"0.004756993","6":"occupied"},{"1":"23.100","2":"27.2000","3":"419.0","4":"701.6667","5":"0.004756993","6":"occupied"},{"1":"23.100","2":"27.2000","3":"419.0","4":"699.0000","5":"0.004756993","6":"occupied"},{"1":"23.100","2":"27.2000","3":"419.0","4":"689.3333","5":"0.004756993","6":"occupied"},{"1":"23.075","2":"27.1750","3":"419.0","4":"688.0000","5":"0.004745351","6":"occupied"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
   </script>
 </div>
+<p><br></p>
 <p>The next thing we have to do is normalize the data so that each feature has the same weigth in our model. We will do this through the Min-Max normalization method by defining a new function below.</p>
 <pre class="r"><code>normalize = function(x) { # Function takes in a vector
   return ((x - min(x)) / (max(x) - min(x))) # distance of item value - minimum vector value divided by the range of all vector values
 }</code></pre>
+<p><br></p>
 <p>Now we will apply the normalization function to each feature in our dataset through the code snippet below. We are using the sapply() function to do this.</p>
 <pre class="r"><code>cleanDF_n = sapply(cleanDF[-6], normalize) %&gt;% as.data.frame()
 
@@ -333,6 +338,7 @@ summary(cleanDF_n)</code></pre>
 ##  Mean   :0.3126  
 ##  3rd Qu.:0.4413  
 ##  Max.   :1.0000</code></pre>
+<p><br></p>
 <p>We now see that the ranges for each of the features are normalized (all ranges are from 0 to 1). The last thing we will do is spit our data into a training set and a test set and create two corresponding sets of labels.</p>
 <pre class="r"><code>trainDF_feat = cleanDF_n[1:7000,]
 testDF_feat = cleanDF_n[7001:8143,]
@@ -380,6 +386,7 @@ head(cleanDF_test_pred, 10)</code></pre>
 ##                                         
 ##        &#39;Positive&#39; Class : occupied      
 ## </code></pre>
+<p><br></p>
 <p>By doing some math we can also see that the model produces slightly more false positives (~1.7%) than false negatives (~1.5%).</p>
 <pre class="r"><code>cat(&quot;The false positive rate is:&quot;,
     toString(1-(860/875)),

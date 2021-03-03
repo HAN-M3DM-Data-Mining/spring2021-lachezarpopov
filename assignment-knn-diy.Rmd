@@ -15,7 +15,7 @@ output:
 ---
 
 
-```{r}
+```{r results = "hide"}
 library(tidyverse)
 library(class)
 library(caret)
@@ -44,15 +44,19 @@ occupancy_url = 'https://raw.githubusercontent.com/HAN-M3DM-Data-Mining/assignme
 rawDF = read_csv(occupancy_url)
 head(rawDF, 10)
 ```
+<br>
 
 Since the date column is the identifier for each observation and not an independent variable we will use in our model, we will remove it and store the output in a new variable called cleanDF in the code snippet below. We will also look at summary of the feature variables by specifying a subset of the data that excludes the target variable (the 6th column).
 
 ```{r}
+
 cleanDF = rawDF[-1]
 summary(cleanDF[-6])
 ```
+<br>
 
 We can see that the ranges for the different feature variables are vastly different from one another so we would have to normalize them later in the data preparation section. We can also check the occurrences of the two values of our target variable in the following manner:
+
 ```{r}
 count_occupancy = table(cleanDF$Occupancy) # for the counts in absolute terms
 print('The observations of the labels where 0 is <not occupied> and 1 is <occupied> is:' )
@@ -74,6 +78,7 @@ cat("\n",
     sep='')
 
 ```
+<br>
 
 We can see that there are many more observations of unoccupied rooms (6414) vs observations of occupied rooms (1729)
 
@@ -86,6 +91,7 @@ cleanDF$Occupancy = factor(cleanDF$Occupancy, levels = c(0, 1), labels = c("not_
 head(cleanDF, 10)
 ```
 
+<br>
 
 The next thing we have to do is normalize the data so that each feature has the same weigth in our model. We will do this through the Min-Max normalization method by defining a new function below.
 
@@ -95,6 +101,7 @@ normalize = function(x) { # Function takes in a vector
 }
 ```
 
+<br>
 
 Now we will apply the normalization function to each feature in our dataset through the code snippet below. We are using the sapply() function to do this.
 
@@ -103,6 +110,8 @@ cleanDF_n = sapply(cleanDF[-6], normalize) %>% as.data.frame()
 
 summary(cleanDF_n)
 ```
+<br>
+
 We now see that the ranges for each of the features are normalized (all ranges are from 0 to 1). The last thing we will do is spit our data into a training set and a test set and create two corresponding sets of labels. 
 
 ```{r}
@@ -130,6 +139,7 @@ We will evaluate our model by comparing the predicted labels with the actual lab
 ```{r}
 confusionMatrix(cleanDF_test_pred, testDF_labels[[1]], positive = "occupied", dnn = c("Prediction", "Actual"))
 ```
+<br>
 
 By doing some math we can also see that the model produces slightly more false positives (~1.7%) than false negatives (~1.5%).
 
