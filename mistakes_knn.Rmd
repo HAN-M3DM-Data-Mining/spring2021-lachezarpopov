@@ -1,0 +1,13 @@
+---
+title: "R Notebook"
+#output: html_notebook
+---
+
+Line 21: "Caret" is with 2 Rs 
+Line 44: the argument for the read_csv function should be "occupancy_url"
+Line 52: should be "cleanDF = rawDF[-1]"
+Line 117: The range should be "cleanDF_n[1:7000,]"
+Line 118: The range should be "cleanDF_n[7001:8143,]"
+Line 120: The range should be "cleanDF[1:7000, 6]"
+Line 121: The range should be "cleanDF[7001:8143, 6]"
+Line 139: The value for the "positive" argument should be "occupied"
