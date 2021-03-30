@@ -37,7 +37,7 @@ If machine learning can automate the detection of room occupancy for HVAC contro
 
 ## Data Understanding
 
-To get a better understanding of the data, we will look at the first 10 rows of the dataset. The output of the code snippet below shows us that there are 6 variables with numeric values and 1 variable with values of the type "S3: POSIXct" (timestamps). Of the six numeric variables "Occupancy" is our target variable and the other five are the features that we will use to base our predictions in the KNN model.
+To get a better understanding of the data, we will look at the first 10 rows of the dataset. The output of the code snippet below shows us that there are 6 variables with numeric values and 1 variable with values of the type "S3: POSIXct" (timestamps). Of the six variables "Occupancy" is our target variable and the other five are the features that we will use to base our predictions in the KNN model.
 
 ```{r}
 occupancy_url = 'https://raw.githubusercontent.com/HAN-M3DM-Data-Mining/assignments/master/datasets/KNN-occupancy.csv'

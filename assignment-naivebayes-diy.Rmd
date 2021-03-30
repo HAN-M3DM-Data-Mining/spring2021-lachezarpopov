@@ -5,28 +5,63 @@ author:
   - name reviewer here - Reviewer
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
-   html_notebook:
-    toc: true
+  html_document:
+    toc: yes
+    toc_depth: '2'
+    df_print: paged
+  html_notebook:
+    toc: yes
     toc_depth: 2
 ---
 
-```{r}
+```{r results = "hide"}
 library(tidyverse)
 library(tm)
 library(caret)
 library(wordcloud)
 library(e1071)
 ```
+
 ---
 
 Choose a suitable dataset from [this](https://github.com/HAN-M3DM-Data-Mining/assignments/tree/master/datasets) folder and train your own Naive Bayes model. Follow all the steps from the CRISP-DM model.
+
+**Chosen dataset**: Fake News
 
 
 ## Business Understanding
 text and code here
 
 ## Data Understanding
-text and code here
+
+The dataset was retrived from Kaggle, which is a community-maintained repository for public dataset. The data is comprised of news articles (the instances) along with labels for those articles (trustworthy or not) and a few other variables.
+
+First we will look at the first 10 rows of the dataset to get a better understanding of the data.
+
+```{r}
+fakeNews_url = 'https://raw.githubusercontent.com/HAN-M3DM-Data-Mining/assignments/master/datasets/NB-fakenews.csv'
+rawDF = read_csv(fakeNews_url)
+head(rawDF) # returns an error for some reason, works fine in the console
+```
+
+We can see that the dataset has five columns. The labels are market with 1 (unreliable) and 0 (reliable). The other variables are the ID of the article (numeric), title (character), author (character) and the content of the aricle in the text column (character).
+
+In the summary of the dataframe we can see that there are 20800 observations.
+
+```{r}
+summary(rawDF)
+```
+Let us also examine the most commonly occuring words in reliable and unreliable articles through a wordcloud.
+
+```{r}
+unreliable = rawDF %>% filter(label == 1)
+reliable = rawDF %>% filter(label == 0)
+
+wordcloud(unreliable$text, max.words = 20, scale = c(4, 0.8), colors= c("indianred1","indianred2","indianred3","indianred"))
+wordcloud(reliable$text, max.words = 20, scale = c(4, 0.8), colors= c("lightsteelblue1","lightsteelblue2","lightsteelblue3","lightsteelblue"))
+```
+
+
 
 ## Data Preparation
 text and code here
