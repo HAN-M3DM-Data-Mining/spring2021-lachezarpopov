@@ -112,7 +112,7 @@ cleanCorpus = cleanCorpus %>% tm_map(stripWhitespace)
 We will compare the clean and raw corpuses to see the results in the following code chunk.
 
 ```{r}
-tibble(Raw = rawCorpus$content[1], Clean = cleanCorpus$content[1])
+tibble(Raw = rawCorpus$content[1:2], Clean = cleanCorpus$content[1:2])
 ```
 
 Now we will transform the corpus to a matrix. The rows in the matrix are the articles and the columns are the individual words. The numbers in the cells show how many times a given word appears in a given article.
