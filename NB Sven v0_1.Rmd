@@ -1,0 +1,191 @@
+---
+title: "Assigment - Naive Bayes DIY"
+author:
+  - Sven van Bezooijen - Author
+  - Lachezar Popov - Reviewer
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+   html_notebook:
+    toc: true
+    toc_depth: 2
+---
+
+```{r results = "hide"}
+library(tidyverse)
+library(tm)
+library(caret)
+library(wordcloud)
+library(e1071)
+```
+
+---
+
+Choose a suitable dataset from [this](https://github.com/HAN-M3DM-Data-Mining/assignments/tree/master/datasets) folder and train your own Naive Bayes model. Follow all the steps from the CRISP-DM model.
+
+The chosen dataset is Fake News.
+
+## Business Understanding
+For a Business. Fake news can be harmful to the sales of a certain product or to the company as a whole. So knowing what fake news is in circulation could be beneficial to predict or make decisions to prevent this from happening
+
+## Data Understanding
+
+The dataset was retrieved from Kaggle, A repo which is community maintained. The dataset is based on articles, extra parameters and a label.
+At the start we open the first row of the file.
+
+```{r}
+fakeNews_url = 'https://raw.githubusercontent.com/HAN-M3DM-Data-Mining/assignments/master/datasets/NB-fakenews.csv'
+rawDF = read_csv(fakeNews_url)
+head(rawDF,1) 
+```
+
+The set contains 5 columns. These columns contain the ID of the article (numeric), title (character), author (character) and the content of the article in the text column (character).
+
+The dataset contains 20800 observations.
+
+```{r}
+summary(rawDF)
+```
+
+The most commonly occuring words in reliable and unreliable articles are placed into a wordcloud.
+
+```{r}
+unreliable = rawDF %>% filter(label == 1)
+reliable = rawDF %>% filter(label == 0)
+
+wordcloud(unreliable$text, max.words = 20, scale = c(4, 0.8), colors= c("lightsteelblue1","lightsteelblue2","lightsteelblue3","lightsteelblue"))
+wordcloud(reliable$text, max.words = 20, scale = c(4, 0.8), colors= c("indianred1","indianred2","indianred3","indianred"))
+```
+
+The output produces some interesting results. For example, we can see that the word "trump" appears in both wordclouds. Most of the words, however, are generic and do not provide much information (e.g. "the", "one", "can", "just", etc.).
+
+## Data Preparation
+
+First we will transform the data type of the target from character to factor.
+
+```{r}
+rawDF$label = factor(rawDF$label)
+```
+
+As a next step, the Corpus() function is used.
+
+```{r}
+rawCorpus <- Corpus(VectorSource(rawDF$text))
+inspect(rawCorpus[1])
+```
+The index of each document within the corpus corresponds to the row of the article in our rawDF dataframe.
+
+Next, we will transform all of the text to lowercase and remove the numbers. 
+
+```{r}
+cleanedCorpus = rawCorpus %>% tm_map(tolower) %>% tm_map(removeNumbers)
+```
+
+Next we will use the tm_map() to clean the dataset from interpunction
+
+```{r}
+cleanedCorpus = cleanedCorpus %>% tm_map(removePunctuation) %>% tm_map(removeWords, stopwords(kind = "en"))
+```
+
+We will also remove some additional characters that tm_map(removePunctuation) has failed to remove in previous attempts.
+
+```{r}
+toSpace = content_transformer(function (x , pattern ) gsub(pattern, " ", x))
+
+cleanedCorpus = tm_map(cleanedCorpus, toSpace, "—")
+cleanedCorpus = tm_map(cleanedCorpus, toSpace, " ’s")
+cleanedCorpus = tm_map(cleanedCorpus, toSpace, '“')
+cleanedCorpus = tm_map(cleanedCorpus, toSpace, '”')
+
+inspect(cleanedCorpus[1])
+```
+
+To remove the new inserted whitespace. The tm_map(stripWhitespace) is used.
+
+```{r}
+cleanedCorpus = cleanedCorpus %>% tm_map(stripWhitespace)
+```
+After this. A comparison is made. this Comparison will show how much there is improved in the set. This done with the tibble() function
+
+```{r}
+tibble(Raw = rawCorpus$content[1], Clean = cleanedCorpus$content[1])
+```
+
+Now we will transform the corpus to a matrix. The rows in the matrix are the articles and the columns are the individual words. The numbers in the cells show how many times a given word appears in a given article.
+
+```{r}
+cleanDTM = DocumentTermMatrix(cleanedCorpus)
+inspect(cleanDTM)
+```
+createDataPartition() function from the caret package is used to partition the dataframes into multiple sets. A devide of 80 for testing and 20 for training is made. First we will create a vector of indices for the training set. With indexation afterwards.
+
+```{r}
+trainIndex = createDataPartition(rawDF$label, list=FALSE, times = 1, p =.8)
+head(trainIndex)
+trainingSet = rawDF[trainIndex, ]
+```
+
+Next we will create the test set by subtracting the indices of the training set. With splitting them afterward into DTM and Corpus sets
+
+```{r}
+testSet = rawDF[-trainIndex, ]
+
+trainCorpus = cleanedCorpus[trainIndex]
+testCorpus = cleanedCorpus[-trainIndex]
+
+trainDTM = cleanDTM[trainIndex, ]
+testDTM = cleanDTM[-trainIndex, ]
+```
+
+We know from inspecting the DTM above that it has 217652 terms, which means that it has the same number of features.Using all would be inefficient. While a minimum of 500 normally is to high. Anything less produces an object too large to be processed when transforming the DTM later on (due to the limited memory of the author's laptop. Desktop wise it is fine). Thus, if the code was run on a more powerful machine, a lower minimum frequence is advised (e.g. 5-10)
+
+```{r}
+freqWords = trainDTM %>% findFreqTerms(500)
+trainDTM = DocumentTermMatrix(trainCorpus, list(dictionary = freqWords))
+testDTM = DocumentTermMatrix(testCorpus, list(dictionary = freqWords))
+
+head(trainDTM)
+```
+The number is reduced (i.e. features) to 2473. 
+
+Next, the count is converted to be used in the datasets. Which after the test set is shown
+
+```{r}
+CountConversion <- function(x) {
+  x = ifelse(x > 0, 1, 0) %>% factor(levels = c(0,1), labels = c("0", "1"))
+}
+
+trainDTM <- apply(trainDTM, MARGIN = 2, CountConversion)
+testDTM <- apply(testDTM, MARGIN = 2, CountConversion)
+
+head(trainDTM[,1:10])
+```
+
+
+## Modeling
+
+To model the dataset. naiveBayes() is used. Which is included in the e1071 library
+
+```{r}
+nbayesModel = naiveBayes(trainDTM, trainingSet$label, laplace = 1)
+```
+
+## Evaluation and Deployment
+
+We will store the prediction vector to a new variable and then build run a construction matrix 
+
+```{r}
+Prediction = predict(nbayesModel, testDTM)
+confusionMatrix(Prediction, testSet$label, positive = "1", dnn = c("Predicted", "Actual"))
+```
+We can see that the accuracy of the model is ≈0.72. The model tends to produce more false negatives than false positives considering the base rate is roughly the same. This is because the false negatives may be more costly as potentially dangerous misinformation may be spread.
+
+# Reviewer adds suggestions for improving the model
+
+1. lines 52 & 53 - the quotes were removed for the values of the label variable as the values are numeric.
+2. line 66: Wrong column is referenced. rawDF$type changed to rawDF\$label
+3. line 86: tm_map(tolower) was removed as it was already run in the previous code chunk
+4. lines 89 to 100 were added to remove special characters not captured by tm_map(removePunctuation)
+5. line 119: Wrong explanation. The 80% of the instances are used for the training set and 20% for the testing set, not the other way around.
+6. line 127: Wrong explaination. There is no "splitting" occuring between the corpus and DTM. I.e. The same observations are used in the training corpus and training DTM. Same for the testing corpus and testing DTM.
+7. line 178: Wrong label column and wrong positive class. "testSet$type" was changed to "testSet\$label" and "positive = "spam"" was changed to "positive = "1""
+8. line 180: Wrong explanation. the proportion of false positives and false negatives is not a result of false negatives being more costly.

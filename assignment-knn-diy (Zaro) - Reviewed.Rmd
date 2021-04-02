@@ -1,0 +1,182 @@
+---
+title: "Assigment - kNN DIY"
+author:
+- Lachezar Popov - Author
+- Giang Dao - Reviewer
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    toc: yes
+    toc_depth: '2'
+    df_print: paged
+  html_notebook:
+    toc: yes
+    toc_depth: 2
+---
+
+
+```{r, results = "hide", message=FALSE, warning=FALSE}
+library(tidyverse)
+library(class)
+library(caret)
+```
+
+---
+
+Choose a suitable dataset from [this](https://github.com/HAN-M3DM-Data-Mining/assignments/tree/master/datasets) folder and train  your own kNN model. Follow all the steps from the CRISP-DM model.
+
+**Chosen dataset**: Occupancy Detection
+
+## Business Understanding
+
+Energy wastage is one of the key issues that needs to be addressed in society's transition to sustainable energy production and consumption. Energy wastage presents not only environmental concerns but also material economic concerns. One significant contributor to energy wastage is HVAC systems running all the time, even when there's no people in a given room. 
+
+Automating the work of HVAC systems based on the occupancy of rooms can introduce significant energy savings. One study estimates that anywhere between 29% and 80% of energy can be saved when using occupancy data as input for HVAC control algorithms in commercial buildings (Brooks et al., 2005).
+
+If machine learning can automate the detection of room occupancy for HVAC control algorithms, then significant energy savings can be realized in both commercial and residential properties. Using cameras for this would introduce privacy concerns, so the predictive model would have to rely on other inputs such as temperature, CO2 levels, humidity, light, etc. This paper presents a K-NN model for predicting room ocuppancy based on a pre-compiled dataset from UC Irvine's machine learning repository.
+
+## Data Understanding
+
+To get a better understanding of the data, we will look at the first 10 rows of the dataset. The output of the code snippet below shows us that there are 6 variables with numeric values and 1 variable with values of the type "S3: POSIXct" (timestamps). Of the six numeric variables "Occupancy" is our target variable and the other five are the features that we will use to base our predictions in the KNN model.
+
+```{r}
+occupancy_url = 'https://raw.githubusercontent.com/HAN-M3DM-Data-Mining/assignments/master/datasets/KNN-occupancy.csv'
+rawDF = read_csv(occupancy_url)
+head(rawDF, 10)
+```
+<br>
+
+Since the date column is the identifier for each observation and not an independent variable we will use in our model, we will remove it and store the output in a new variable called cleanDF in the code snippet below. We will also look at summary of the feature variables by specifying a subset of the data that excludes the target variable (the 6th column).
+
+```{r}
+cleanDF = rawDF[-1]
+summary(cleanDF[-6])
+```
+<br>
+
+We can see that the ranges for the different feature variables are vastly different from one another so we would have to normalize them later in the data preparation section. We can also check the occurrences of the two values of our target variable in the following manner:
+
+```{r}
+count_occupancy = table(cleanDF$Occupancy) # for the counts in absolute terms
+print('The observations of the labels where 0 is <not occupied> and 1 is <occupied> are:' )
+print(count_occupancy)
+
+
+propOccupancy = round(prop.table(count_occupancy) * 100 , digits = 2) # returns the proportion of each label in percentage terms
+
+cat("\n",
+    "The proportion of observations where the room is NOT occupied is ",
+    toString(propOccupancy[1]),
+    "%",
+    sep='')
+
+cat("\n",
+    "The proportion of observations where the room is occupied is ",
+    toString(propOccupancy[2]),
+    "%",
+    sep='')
+
+```
+<br>
+
+We can see that there are many more observations of unoccupied rooms (6414) vs observations of occupied rooms (1729).
+
+## Data Preparation
+
+First we have to convert the labels of the dataset to the "factor" data type so that they can be interpreted by the our KNN model. 
+
+```{r}
+cleanDF$Occupancy = factor(cleanDF$Occupancy, levels = c(0, 1), labels = c("not_occupied", "occupied")) %>% relevel("not_occupied")
+head(cleanDF)
+```
+
+<br>
+
+The next thing we have to do is normalize the data so that each feature has the same weight in our model. We will do this through the Min-Max normalization method by defining a new function below.
+
+```{r}
+normalize = function(x) { # Function takes in a vector
+  return ((x - min(x)) / (max(x) - min(x))) # distance of item value - minimum vector value divided by the range of all vector values
+}
+```
+
+<br>
+
+Now we will apply the normalization function to each feature in our dataset through the code snippet below. We are using the sapply() function to do this.
+
+```{r}
+cleanDF_n = sapply(cleanDF[-6], normalize) %>% as.data.frame()
+
+summary(cleanDF_n)
+```
+<br>
+
+We now see that the ranges for each of the features are normalized (all ranges are from 0 to 1). The last thing we will do is spit our data into a training set and a test set and create two corresponding sets of labels. 
+
+```{r}
+trainDF_feat = cleanDF_n[1:7000,]
+testDF_feat = cleanDF_n[7001:8143,]
+
+trainDF_labels = cleanDF[1:7000, 6]
+testDF_labels = cleanDF[7001:8143, 6]
+```
+
+
+## Modeling
+
+We will now both define our model and classify the observations of the test set with the function knn() from the class package. After running the model multiple times with different values for K and comparing the results, we have chosen to stick to a 5-NN model as it gives the highest produces the highest accuracy for our test sample.
+
+```{r}
+cleanDF_test_pred = knn(train = as.matrix(trainDF_feat), test = as.matrix(testDF_feat), cl = as.matrix(trainDF_labels), k = 5)
+head(cleanDF_test_pred, 10)
+```
+
+## Evaluation and Deployment
+
+We will evaluate our model by comparing the predicted labels with the actual labels of the test dataset. We can do this through the confusionMatrix() function which constructs a confusion matrix. We can see that the model has an accuracy of approximately 98% for our test data and a P-value much below 5%.
+
+```{r}
+confusionMatrix(cleanDF_test_pred, testDF_labels[[1]], positive = "occupied", dnn = c("Prediction", "Actual"))
+```
+<br>
+
+By doing some math we can also see that the model produces slightly more false positives (~1.7%) than false negatives (~1.5%). Which type of error is more costly would depend on whether the HVAC systems could be turned on manually. If the system can be turned on manually then the cost of false negatives is relatively small as a person can just turn on the system themself in an occupied room. In this case the cost of the false positives would be higher as the system would be wasting energy on empty rooms. 
+
+```{r}
+cat("The false positive rate is:",
+    toString(1-(860/875)),
+    "\n")
+
+cat("The false negative rate is:",
+    toString(1-(264/268)))
+```
+
+# Sources:
+
+  J. Brooks, S. Goyal, R. Subramany, Y. Lin, T. Middelkoop, L. Arpan, L. Carloni, P.
+Barooah, An experimental investigation of occupancy-based energy-efficient
+control of commercial building indoor climate, in: Proceeding of the IEEE 53rd
+Annual Conference on, IEEE, Decision and Control (CDC), Los Angeles, CA,
+2014, pp. 5680–5685.
+
+# Reviewer adds suggestions for improving the model
+
+##1.	Library(carret)
+Wrong package, should be caret
+
+##2.	occupancy_url = 'https://raw.githubusercontent.com/HAN-M3DM-Data-Mining/assignments/master/datasets/KNN-occupancy.csv'
+rawDF = read_csv(url)
+Wrong variable name reference, should be occupancy_url
+
+##3.	cleanDF = rawDF – 1
+Wrong formula, should be cleanDF = rawDF[-1]
+
+##4.	trainDF_feat = cleanDF_n[1:469,]
+testDF_feat = cleanDF_n[470:569,]
+
+trainDF_labels = cleanDF[1:469, 6]
+testDF_labels = cleanDF[470:569, 6]
+Wrong number of observations, should be [1:7000,] [7001:8143,]
+
+##5.	confusionMatrix(cleanDF_test_pred, testDF_labels[[1]], positive = 1, dnn = c("Prediction", "Actual"))
+Wrong reference, should be positive = “occupied”
